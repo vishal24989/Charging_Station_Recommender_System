@@ -50,7 +50,20 @@ current_location = st.text_input('Current Location (latitude, longitude)')
 
 if st.button('Recommend Charging Stations'):
     current_location = tuple(map(float, current_location.split(',')))
-    distances = [geopy.distance.geodesic(current_location, loc).km for loc in charging_station_df['Charging_Station_Location']]
+    distances = [geopy.distance.geodesic(current_location, eval(loc)).km for loc in charging_station_df['Charging_Station_Location']]
     charging_station_df['Distance'] = distances
-    recommended_stations = charging_station_df.nsmallest(5, 'Distance')
-    st.write(recommended_stations)
+    
+    # Calculate score
+    charging_station_df['Score'] = 0.25*(1-charging_station_df['Distance']) + 0.25*(1-charging_station_df['Cost_per_kWh (₹)']) + 0.25*charging_station_df['Rating'] - 0.25*charging_station_df['Queue']
+    
+    recommended_stations = charging_station_df.nlargest(3, 'Score')
+    st.write(recommended_stations[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
+    
+    # Show on Google Map
+    api_key = 'AIzaSyBvazGdB-4tblnmjiymlmhxrOMctOB8bDQ'
+    markers = f'color:blue|label:C|{current_location[0]},{current_location[1]}'
+    for i, loc in enumerate(recommended_stations['Charging_Station_Location']):
+        location = eval(loc)
+        markers += f'&markers=color:red|label:{i+1}|{location[0]},{location[1]}'
+    map_url = f'https://maps.googleapis.com/maps/api/staticmap?center={current_location[0]},{current_location[1]}&zoom=13&size=600x400&maptype=roadmap&{markers}&key={api_key}'
+    st.image(map_url)
