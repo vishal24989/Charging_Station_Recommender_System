@@ -68,3 +68,42 @@ if st.button('Recommend Charging Stations'):
         markers += f'&markers=color:red|label:{i+1}|{location[0]},{location[1]}'
     map_url = f'https://maps.googleapis.com/maps/api/staticmap?center={current_location[0]},{current_location[1]}&zoom=13&size=600x400&maptype=roadmap&{markers}&key={api_key}'
     st.image(map_url)
+
+
+# Charging Station Recommender System with User Preferences
+st.header('Enhanced Charging Station Recommender System')
+
+# Assuming we have a user profile for preference weights. In a real-world scenario, 
+# this could be fetched from a user's profile or learned from past interactions.
+user_preferences = {
+    'Distance': st.slider('Preference for Distance (Higher means you prefer closer stations)', 0.0, 1.0, 0.25),
+    'Cost': st.slider('Preference for Cost (Higher means you prefer cheaper stations)', 0.0, 1.0, 0.25),
+    'Rating': st.slider('Preference for Rating (Higher means you prefer higher rated stations)', 0.0, 1.0, 0.25),
+    'Queue': st.slider('Preference for Queue (Higher means you prefer less crowded stations)', 0.0, 1.0, 0.25),
+}
+
+current_location_preference = st.text_input('Current Location (latitude, longitude) for Enhanced Recommendation')
+
+if st.button('Recommend Charging Stations with Preferences'):
+    current_location_preference = tuple(map(float, current_location_preference.split(',')))
+    distances_preference = [geopy.distance.geodesic(current_location_preference, eval(loc)).km for loc in charging_station_df['Charging_Station_Location']]
+    charging_station_df['Distance'] = distances_preference
+    
+    # Calculate score with user preferences. This score is a weighted sum based on the user's preferences.
+    charging_station_df['Preference_Score'] = (
+        user_preferences['Distance']*(1-charging_station_df['Distance']) + 
+        user_preferences['Cost']*(1-charging_station_df['Cost_per_kWh (₹)']) + 
+        user_preferences['Rating']*charging_station_df['Rating'] - 
+        user_preferences['Queue']*charging_station_df['Queue']
+    )
+    
+    recommended_stations_preference = charging_station_df.nlargest(3, 'Preference_Score')
+    st.write(recommended_stations_preference[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
+    
+    # Show on Google Map for enhanced recommendation
+    markers_preference = f'color:blue|label:C|{current_location_preference[0]},{current_location_preference[1]}'
+    for i, loc in enumerate(recommended_stations_preference['Charging_Station_Location']):
+        location = eval(loc)
+        markers_preference += f'&markers=color:red|label:{i+1}|{location[0]},{location[1]}'
+    map_url_preference = f'https://maps.googleapis.com/maps/api/staticmap?center={current_location_preference[0]},{current_location_preference[1]}&zoom=13&size=600x400&maptype=roadmap&{markers_preference}&key={api_key}'
+    st.image(map_url_preference)
