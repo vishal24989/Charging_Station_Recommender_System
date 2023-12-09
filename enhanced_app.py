@@ -9,7 +9,7 @@ import geopy.distance
 # Load data
 @st.cache
 def load_data():
-    soc_df = pd.read_csv('SOC_Prediction_Dataset_Bangalore_Updated.csv')
+    soc_df = pd.read_csv('TripA07_with_Combined_Location.csv')
     charging_station_df = pd.read_csv('Charging_Station_Recommender_System_Dataset_Bangalore_Updated.csv')
     return soc_df, charging_station_df
 
@@ -17,32 +17,59 @@ soc_df, charging_station_df = load_data()
 
 # Prepare the model for SOC prediction
 def prepare_model(df):
-    X = df.drop(['Timestamp', 'Current Vehicle Location', 'SOC (%)'], axis=1)
-    y = df['SOC (%)']
+    # List of columns to be removed
+    columns_to_remove = ['Time [s]', 'min. SoC [%]', 'max. SoC [%)', 'Regenerative Braking Signal ', 
+                         'Heating Power CAN [kW]', 'Requested Heating Power [W]', 
+                         'max. Battery Temperature [°C]', 'displayed SoC [%]', 'Heater Signal', 
+                         'Requested Coolant Temperature [°C]', 'Location', 'Cumulative Distance (km)',
+                         'Cabin Temperature Sensor [°C]', 'Motor Torque [Nm]', 'Elevation [m]', 
+                         'Ambient Temperature [°C]']
+
+    # Drop the specified columns
+    dataframe = dataframe.drop(columns=columns_to_remove, errors='ignore')
+
+    # Separate the target variable
+    X = dataframe.drop('SoC [%]', axis=1)
+    y = dataframe['SoC [%]']
+
+    # Split the data into training and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Initialize the RandomForestRegressor
     model = RandomForestRegressor(random_state=42)
+
+    # Fit the model
     model.fit(X_train, y_train)
+
+    # Predict on the test set
     y_pred = model.predict(X_test)
+
+    # Calculate RMSE
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-    st.write('Model RMSE: ', rmse)
+
     return model
 
 model = prepare_model(soc_df)
 
 # SOC Prediction
-st.header('State of Charge (SOC) Prediction')
-current = st.number_input('Current (A)')
-voltage = st.number_input('Voltage (V)')
-temperature = st.number_input('Temperature (°C)')
-battery_capacity = st.number_input('Battery Capacity (Ah)')
-accessory_load = st.number_input('Accessory Load (W)')
-elevation = st.number_input('Elevation (m)')
-temperature_outside = st.number_input('Temperature Outside (°C)')
+ # Input fields for the features
+velocity = st.number_input("Velocity [km/h]", min_value=0.0, max_value=200.0, value=0.0)
+throttle = st.number_input("Throttle [%]", min_value=0.0, max_value=100.0, value=0.0)
+acceleration = st.number_input("Longitudinal Acceleration [m/s^2]", min_value=0.0, max_value=10.0, value=0.0)
+battery_voltage = st.number_input("Battery Voltage [V]", min_value=0.0, max_value=500.0, value=0.0)
+battery_current = st.number_input("Battery Current [A]", min_value=-100.0, max_value=100.0, value=0.0)
+battery_temperature = st.number_input("Battery Temperature [°C]", min_value=-50.0, max_value=100.0, value=0.0)
+aircon_power = st.number_input("AirCon Power [kW]", min_value=0.0, max_value=10.0, value=0.0)
+heat_exchanger_temp = st.number_input("Heat Exchanger Temperature [°C]", min_value=-50.0, max_value=100.0, value=0.0)
+
 
 if st.button('Predict SOC'):
-    input_features = np.array([current, voltage, temperature, battery_capacity, accessory_load, elevation, temperature_outside]).reshape(1, -1)
-    prediction = model.predict(input_features)
-    st.write('Predicted SOC: ', prediction[0])
+    features = pd.DataFrame([[velocity, throttle, acceleration, battery_voltage, battery_current, battery_temperature, aircon_power, heat_exchanger_temp]],
+                           columns=['Velocity [km/h]', 'Throttle [%]', 'Longitudinal Acceleration [m/s^2]', 
+                                    'Battery Voltage [V]', 'Battery Current [A]', 'Battery Temperature [°C]', 
+                                    'AirCon Power [kW]', 'Heat Exchanger Temperature [°C]'])
+    prediction = model.predict(features)
+    st.success(f"The predicted State of Charge (SoC) is: {prediction[0]:.2f}%")
 
 # Charging Station Recommender System
 st.header('Charging Station Recommender System')
