@@ -87,7 +87,7 @@ if st.button('Recommend Charging Stations'):
     st.write(recommended_stations[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
     
     # Show on Google Map
-    api_key = 'AIzaSyBvazGdB-4tblnmjiymlmhx'
+    
 
     markers = f'color:blue|label:C|{current_location[0]},{current_location[1]}'
     for i, loc in enumerate(recommended_stations['Charging_Station_Location']):
