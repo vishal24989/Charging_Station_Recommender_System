@@ -26,11 +26,11 @@ def prepare_model(df):
                          'Ambient Temperature [°C]']
 
     # Drop the specified columns
-    dataframe = dataframe.drop(columns=columns_to_remove, errors='ignore')
+    df = df.drop(columns=columns_to_remove, errors='ignore')
 
     # Separate the target variable
-    X = dataframe.drop('SoC [%]', axis=1)
-    y = dataframe['SoC [%]']
+    X = df.drop('SoC [%]', axis=1)
+    y = df['SoC [%]']
 
     # Split the data into training and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
