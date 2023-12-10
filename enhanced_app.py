@@ -118,11 +118,12 @@ if st.button('Recommend Charging Stations with Preferences'):
     ).add_to(m)
 
    # Add markers for the top 3 recommended charging stations
-    top_station_location = None
+    if 'top_station_location' not in st.session_state:
+    st.session_state.top_station_location = None
     for index, row in recommended_stations_preference.iterrows():
         station_location = eval(row['Charging_Station_Location'])
         if index == 0:
-            top_station_location = station_location
+            st.session_state.top_station_location = station_location
         popup_text = f"Station ID: {row['Charging_Station_ID']}<br>Cost per kWh: {row['Cost_per_kWh (₹)']}<br>Rating: {row['Rating']}<br>Queue: {row['Queue']}"
         folium.Marker(
             station_location, 
@@ -135,15 +136,20 @@ if st.button('Recommend Charging Stations with Preferences'):
 
     st.write(recommended_stations_preference[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
     st.write(top_station_location)
+    
     # Button to plot the route to the top charging station
-    if st.button("Plot Route to Top Charging Station") and top_station_location:
+    if st.button("Plot Route to Top Charging Station") and st.session_state.top_station_location:
+    try:
         # Get the route from OpenRouteService
         route = client.directions(
-            coordinates=[current_location_preference, top_station_location],
+            coordinates=[current_location_preference, st.session_state.top_station_location],
             profile='driving-car',
             format='geojson'
         )
 
         # Add the route to the map
+        m = folium.Map(location=current_location_preference, zoom_start=12)  # Recreate the map
         folium.features.GeoJson(route).add_to(m)
         folium_static(m)
+    except Exception as e:
+        st.error(f"Error plotting route: {e}")
