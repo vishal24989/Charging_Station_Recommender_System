@@ -125,6 +125,17 @@ if st.button('Recommend Charging Stations with Preferences'):
     )
     
     recommended_stations_preference = charging_station_df.nlargest(3, 'Preference_Score')
+
+    # Extract coordinates for mapping
+    map_data = pd.DataFrame({
+        'Latitude': [lat for lat, _ in recommended_stations_preference['Charging_Station_Location'].apply(eval)] + [current_location_preference[0]],
+        'Longitude': [lon for _, lon in recommended_stations_preference['Charging_Station_Location'].apply(eval)] + [current_location_preference[1]],
+        'Place': ['Charging Station']*3 + ['Current Location']
+    })
+
+    # Display the map with points
+    st.map(map_data)
+    
     st.write(recommended_stations_preference[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
     
 
