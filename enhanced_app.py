@@ -139,15 +139,14 @@ if st.button('Recommend Charging Stations with Preferences'):
     
     # Button to plot the route to the top charging station
     if st.button("Plot Route to Top Charging Station") and st.session_state.top_station_location:
-    try:
-        # Get the route from OpenRouteService
-        route = client.directions(
-            coordinates=[current_location_preference, st.session_state.top_station_location],
-            profile='driving-car',
-            format='geojson'
-        )
-
-        # Add the route to the map
+        try:
+            # Get the route from OpenRouteService
+            route = client.directions(
+                coordinates=[current_location_preference, st.session_state.top_station_location],
+                profile='driving-car',
+                format='geojson'
+                )
+            # Add the route to the map
         m = folium.Map(location=current_location_preference, zoom_start=12)  # Recreate the map
         folium.features.GeoJson(route).add_to(m)
         folium_static(m)
