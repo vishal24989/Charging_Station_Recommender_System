@@ -150,5 +150,5 @@ if st.button('Recommend Charging Stations with Preferences'):
             m = folium.Map(location=current_location_preference, zoom_start=12)  # Recreate the map
             folium.features.GeoJson(route).add_to(m)
             folium_static(m)
-    except Exception as e:
-    st.error(f"Error plotting route: {e}")
+        except Exception as e:
+            st.error(f"Error plotting route: {e}")
