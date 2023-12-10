@@ -11,7 +11,6 @@ from streamlit_folium import folium_static
 import openrouteservice
 
 # Load data
-@st.cache
 def load_data():
     soc_df = pd.read_csv('TripA07_with_Combined_Location.csv')
     charging_station_df = pd.read_csv('Charging_Station_Recommender_System_Dataset_Bangalore_Updated.csv')
