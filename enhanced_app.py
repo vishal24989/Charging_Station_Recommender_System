@@ -89,7 +89,7 @@ user_preferences = {
 
 
 # Configure the OpenRouteService client with your API key
-client = openrouteservice.Client(key='your_api_key')  # Replace 'your_api_key' with your actual API key
+client = openrouteservice.Client(key=st.secrets["api_key"])  # API key
 
 current_location_preference = st.text_input('Current Location (latitude, longitude) for Enhanced Recommendation')
 
