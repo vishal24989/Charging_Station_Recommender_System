@@ -7,6 +7,8 @@ from sklearn.metrics import mean_squared_error
 import geopy.distance
 import folium
 from streamlit_folium import folium_static
+#!pip install openrouteservice
+import openrouteservice
 
 # Load data
 @st.cache
@@ -73,32 +75,6 @@ if st.button('Predict SOC'):
     prediction = model.predict(features)
     st.success(f"The predicted State of Charge (SoC) is: {prediction[0]:.2f}%")
 
-# # Charging Station Recommender System
-# st.header('Charging Station Recommender System')
-# current_location = st.text_input('Current Location (latitude, longitude)')
-
-# if st.button('Recommend Charging Stations'):
-#     current_location = tuple(map(float, current_location.split(',')))
-#     distances = [geopy.distance.geodesic(current_location, eval(loc)).km for loc in charging_station_df['Charging_Station_Location']]
-#     charging_station_df['Distance'] = distances
-    
-#     # Calculate score
-#     charging_station_df['Score'] = 0.25*(1-charging_station_df['Distance']) + 0.25*(1-charging_station_df['Cost_per_kWh (₹)']) + 0.25*charging_station_df['Rating'] - 0.25*charging_station_df['Queue']
-    
-#     recommended_stations = charging_station_df.nlargest(3, 'Score')
-#     st.write(recommended_stations[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
-    
-#     # Show on Google Map
-#     
-
-#     markers = f'color:blue|label:C|{current_location[0]},{current_location[1]}'
-#     for i, loc in enumerate(recommended_stations['Charging_Station_Location']):
-#         location = eval(loc)
-#         markers += f'&markers=color:red|label:{i+1}|{location[0]},{location[1]}'
-#     map_url = f'https://maps.googleapis.com/maps/api/staticmap?center={current_location[0]},{current_location[1]}&zoom=13&size=600x400&maptype=roadmap&{markers}&key={api_key}'
-#     st.image(map_url)
-
-
 # Charging Station Recommender System with User Preferences
 st.header('Enhanced Charging Station Recommender System')
 
@@ -110,6 +86,10 @@ user_preferences = {
     'Rating': st.slider('Preference for Rating (Higher means you prefer higher rated stations)', 0.0, 1.0, 0.25),
     'Queue': st.slider('Preference for Queue (Higher means you prefer less crowded stations)', 0.0, 1.0, 0.25),
 }
+
+
+# Configure the OpenRouteService client with your API key
+client = openrouteservice.Client(key='your_api_key')  # Replace 'your_api_key' with your actual API key
 
 current_location_preference = st.text_input('Current Location (latitude, longitude) for Enhanced Recommendation')
 
@@ -138,9 +118,12 @@ if st.button('Recommend Charging Stations with Preferences'):
         icon=folium.Icon(color='green')
     ).add_to(m)
 
-    # Add markers for the top 3 recommended charging stations
+   # Add markers for the top 3 recommended charging stations
+    top_station_location = None
     for index, row in recommended_stations_preference.iterrows():
         station_location = eval(row['Charging_Station_Location'])
+        if index == 0:
+            top_station_location = station_location
         popup_text = f"Station ID: {row['Charging_Station_ID']}<br>Cost per kWh: {row['Cost_per_kWh (₹)']}<br>Rating: {row['Rating']}<br>Queue: {row['Queue']}"
         folium.Marker(
             station_location, 
@@ -152,13 +135,16 @@ if st.button('Recommend Charging Stations with Preferences'):
     folium_static(m)
 
     st.write(recommended_stations_preference[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
-    
 
+    # Button to plot the route to the top charging station
+    if st.button("Plot Route to Top Charging Station") and top_station_location:
+        # Get the route from OpenRouteService
+        route = client.directions(
+            coordinates=[current_location_preference, top_station_location],
+            profile='driving-car',
+            format='geojson'
+        )
 
-#    # Show on Google Map for enhanced recommendation
-#     markers_preference = f'color:blue|label:C|{current_location_preference[0]},{current_location_preference[1]}'
-#     for i, loc in enumerate(recommended_stations_preference['Charging_Station_Location']):
-#         location = eval(loc)
-#         markers_preference += f'&markers=color:red|label:{i+1}|{location[0]},{location[1]}'
-#     map_url_preference = f'https://maps.googleapis.com/maps/api/staticmap?center={current_location_preference[0]},{current_location_preference[1]}&zoom=13&size=600x400&maptype=roadmap&{markers_preference}&key={api_key}'
-#     st.image(map_url_preference) 
+        # Add the route to the map
+        folium.features.GeoJson(route).add_to(m)
+        folium_static(m)
