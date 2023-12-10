@@ -128,18 +128,27 @@ if st.button('Recommend Charging Stations with Preferences'):
     
     recommended_stations_preference = charging_station_df.nlargest(3, 'Preference_Score')
 
-    # Create a map using Folium
+    # Create a map using Folium at the current location
     m = folium.Map(location=current_location_preference, zoom_start=12)
 
-    # Add markers for the recommended stations
-    for _, row in recommended_stations_preference.iterrows():
-        loc = eval(row['Charging_Station_Location'])
-        folium.Marker(loc, popup=f"Station ID: {row['Charging_Station_ID']}<br>Cost: {row['Cost_per_kWh (₹)']}<br>Rating: {row['Rating']}<br>Queue: {row['Queue']}").add_to(m)
-
     # Add a marker for the current location
-    folium.Marker(current_location_preference, popup="Current Location", icon=folium.Icon(color='green')).add_to(m)
+    folium.Marker(
+        current_location_preference, 
+        popup="Current Location", 
+        icon=folium.Icon(color='green')
+    ).add_to(m)
 
-    # Display the map
+    # Add markers for the top 3 recommended charging stations
+    for index, row in recommended_stations_preference.iterrows():
+        station_location = eval(row['Charging_Station_Location'])
+        popup_text = f"Station ID: {row['Charging_Station_ID']}<br>Cost per kWh: {row['Cost_per_kWh (₹)']}<br>Rating: {row['Rating']}<br>Queue: {row['Queue']}"
+        folium.Marker(
+            station_location, 
+            popup=popup_text, 
+            icon=folium.Icon(color='blue')
+        ).add_to(m)
+
+    # Display the map in the Streamlit app
     folium_static(m)
 
     st.write(recommended_stations_preference[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
