@@ -119,7 +119,7 @@ if st.button('Recommend Charging Stations with Preferences'):
 
    # Add markers for the top 3 recommended charging stations
     if 'top_station_location' not in st.session_state:
-    st.session_state.top_station_location = None
+        st.session_state.top_station_location = None
     for index, row in recommended_stations_preference.iterrows():
         station_location = eval(row['Charging_Station_Location'])
         if index == 0:
