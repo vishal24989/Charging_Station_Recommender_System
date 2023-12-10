@@ -5,6 +5,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 import geopy.distance
+import folium
+from streamlit_folium import folium_static
 
 # Load data
 @st.cache
@@ -126,15 +128,19 @@ if st.button('Recommend Charging Stations with Preferences'):
     
     recommended_stations_preference = charging_station_df.nlargest(3, 'Preference_Score')
 
-    # Extract coordinates for mapping
-    map_data = pd.DataFrame({
-        'latitude': [lat for lat, _ in recommended_stations_preference['Charging_Station_Location'].apply(lambda x: eval(x))] + [current_location_preference[0]],
-        'longitude': [lon for _, lon in recommended_stations_preference['Charging_Station_Location'].apply(lambda x: eval(x))] + [current_location_preference[1]],
-        'Place': ['Charging Station']*3 + ['Current Location']
-    })
+    # Create a map using Folium
+    m = folium.Map(location=current_location_preference, zoom_start=12)
 
-    # Display the map with points
-    st.map(map_data)
+    # Add markers for the recommended stations
+    for _, row in recommended_stations_preference.iterrows():
+        loc = eval(row['Charging_Station_Location'])
+        folium.Marker(loc, popup=f"Station ID: {row['Charging_Station_ID']}<br>Cost: {row['Cost_per_kWh (₹)']}<br>Rating: {row['Rating']}<br>Queue: {row['Queue']}").add_to(m)
+
+    # Add a marker for the current location
+    folium.Marker(current_location_preference, popup="Current Location", icon=folium.Icon(color='green')).add_to(m)
+
+    # Display the map
+    folium_static(m)
 
     st.write(recommended_stations_preference[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
     
