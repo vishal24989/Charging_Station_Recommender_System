@@ -134,7 +134,7 @@ if st.button('Recommend Charging Stations with Preferences'):
     folium_static(m)
 
     st.write(recommended_stations_preference[['Charging_Station_Location', 'Cost_per_kWh (₹)', 'Rating', 'Queue', 'Distance']])
-    print(top_station_location)
+    st.write(top_station_location)
     # Button to plot the route to the top charging station
     if st.button("Plot Route to Top Charging Station") and top_station_location:
         # Get the route from OpenRouteService
